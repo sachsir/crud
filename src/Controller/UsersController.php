@@ -194,4 +194,61 @@ class UsersController extends AppController
         $session->destroy();
         return $this->redirect(['action' => 'login']);
     }
+
+    public function forgot()
+    {
+        $user = $this->Users->newEmptyEntity();
+        if ($this->request->is('post')) {
+            $email = $this->request->getData('email');
+            $result = $this->Users->checkEmail($email);
+            if ($result) {
+                $token = rand(10000, 100000);
+                $result2 = $this->Users->insertToken($email, $token);
+                if ($result2) {
+                    $user->email = $email;
+                    $mailer = new Mailer('default');
+                    $mailer->setTransport('gmail');
+                    $mailer->setFrom(['sachinsingh10101997@gmail.com' => 'Sachin']);
+                    $mailer->setTo($email);
+                    $mailer->setEmailFormat('html');
+                    $mailer->setSubject('Verify New Account');
+                    $mailer->deliver('<a href="http://localhost:8765/users/reset?token=' . $token . '">Click here</a>');
+
+                    $this->Flash->success(__('Reset email send successfully.'));
+
+                    return $this->redirect(['action' => 'login']);
+                }
+            }
+            $this->Flash->error(__('Please enter valid credential..'));
+        }
+        $this->set(compact('user'));
+    }
+
+    public function reset()
+    {
+        $user = $this->Users->newEmptyEntity();
+        $token = $_REQUEST['token'];
+        $result = $this->Users->checkToken($token);
+        if ($result) {
+            if ($this->request->is('post')) {
+                $user = $this->Users->patchEntity($user, $this->request->getData());
+                $password = $this->request->getData('password');
+                $res1 = preg_match('(^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]*).{8,}$)', $password);
+                $confirm_password = $this->request->getData('confirm_password');
+                $res2 = preg_match('(^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]*).{8,}$)', $confirm_password);
+                if($res1 ==1 && $res2 == 1){
+                    $result2 = $this->Users->resetPassword($token, $password);
+                    if ($result2) {
+                        $this->Flash->success(__('Password updated successfully.'));
+                        return $this->redirect(['action' => 'login']);
+                    }
+                }
+                $this->Flash->error(__('Please enter valid password'));
+            }
+        } else {
+            return $this->redirect(['action' => 'login']);
+        }
+
+        $this->set(compact('user'));
+    }
 }

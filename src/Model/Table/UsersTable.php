@@ -291,4 +291,55 @@ class UsersTable extends Table
             return false;
         }
     }
+
+    public function checkEmail($email)
+    {
+        $result = $this->find('all')->where(['email' => $email])->first();
+        if ($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function insertToken($email, $token)
+    {
+        $users = TableRegistry::get("Users");
+        $query = $users->query();
+        $result = $query->update()
+            ->set(['token' => $token])
+            ->where(['email' => $email])
+            ->execute();
+        if ($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function checkToken($token)
+    {
+        $result = $this->find('all')->where(['token' => $token])->first();
+        if ($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function resetPassword($token, $password)
+    {
+        $users = TableRegistry::get("Users");
+        $query = $users->query();
+        $result = $query->update()
+            ->set(['password' => $password, 'token' => ''])
+            ->where(['token' => $token])
+            ->execute();
+        if ($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 }
